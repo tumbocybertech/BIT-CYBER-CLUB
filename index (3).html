@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BIT CYBER CLUB | Ethical Hacking · CTF · Threat Intel</title>
+<meta name="description" content="BIT Cyber Club: a community for ethical hackers, CTF players and threat intelligence analysts.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>
+  tailwind.config = {
+    theme: { extend: {
+      fontFamily: { mono: ['"JetBrains Mono"', 'monospace'], sans: ['Inter', 'system-ui', 'sans-serif'] },
+      colors: { ink: '#0a0a0a', panel: '#0f1411', line: '#1c2b22', neon: '#00ff9c', volt: '#18d4ff', plasma: '#b44cff' }
+    } }
+  }
+</script>
+<style>
+  :root { --neon:#00ff9c; --volt:#18d4ff; --plasma:#b44cff; }
+  body { background:#0a0a0a; color:#c9d6cf; }
+  /* Scanline + grid overlays */
+  body::before { content:""; position:fixed; inset:0; pointer-events:none; z-index:60;
+    background:repeating-linear-gradient(0deg, rgba(0,0,0,.18) 0 1px, transparent 1px 3px); opacity:.35; }
+  .grid-bg { background-image:linear-gradient(rgba(0,255,156,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(0,255,156,.05) 1px,transparent 1px); background-size:40px 40px; }
+  .glow { text-shadow:0 0 8px rgba(0,255,156,.8),0 0 24px rgba(0,255,156,.4); }
+  .glitch { position:relative; }
+  .glitch::before,.glitch::after { content:attr(data-text); position:absolute; inset:0; opacity:.8; }
+  .glitch::before { color:var(--volt); animation:gl 3s infinite steps(1); clip-path:inset(0 0 55% 0); }
+  .glitch::after { color:var(--plasma); animation:gl 3s infinite steps(1) reverse; clip-path:inset(55% 0 0 0); }
+  @keyframes gl { 0%,90%,100%{transform:translate(0)} 92%{transform:translate(-3px,1px)} 94%{transform:translate(3px,-1px)} 96%{transform:translate(-2px,0)} }
+  .card { background:linear-gradient(180deg,rgba(15,20,17,.9),rgba(10,10,10,.9)); border:1px solid #1c2b22; transition:.25s; }
+  .card:hover { border-color:var(--neon); box-shadow:0 0 22px rgba(0,255,156,.18),inset 0 0 20px rgba(0,255,156,.04); transform:translateY(-3px); }
+  .win { border:1px solid #1c2b22; background:#080b09; box-shadow:0 0 30px rgba(0,255,156,.07); }
+  .win-bar { background:#0f1411; border-bottom:1px solid #1c2b22; }
+  .field { background:#080b09; border:1px solid #1c2b22; color:#e8fff4; transition:.2s; }
+  .field:focus { outline:none; border-color:var(--neon); box-shadow:0 0 0 3px rgba(0,255,156,.15),0 0 18px rgba(0,255,156,.25); }
+  .btn { background:var(--neon); color:#04110a; font-weight:800; transition:.2s; }
+  .btn:hover { box-shadow:0 0 28px rgba(0,255,156,.7); transform:translateY(-1px); }
+  .btn-ghost { border:1px solid var(--neon); color:var(--neon); transition:.2s; }
+  .btn-ghost:hover { background:rgba(0,255,156,.1); box-shadow:0 0 20px rgba(0,255,156,.35); }
+  .cursor::after { content:"▋"; animation:blink 1s steps(1) infinite; color:var(--neon); }
+  @keyframes blink { 50%{opacity:0} }
+  .reveal { opacity:0; transform:translateY(18px); transition:.7s; }
+  .reveal.in { opacity:1; transform:none; }
+  .sev-crit{color:#ff3b6b} .sev-high{color:#ffb020} .sev-med{color:var(--volt)} .sev-low{color:var(--neon)}
+  ::-webkit-scrollbar{width:8px;height:8px} ::-webkit-scrollbar-thumb{background:#1c2b22;border-radius:8px}
+  :focus-visible { outline:2px solid var(--volt); outline-offset:2px; }
+  @media (prefers-reduced-motion:reduce){ *{animation:none!important;transition:none!important} .reveal{opacity:1;transform:none} }
+</style>
+</head>
+<body class="font-sans antialiased">
+
+<!-- ============ NAVBAR ============ -->
+<header class="fixed top-0 inset-x-0 z-50 backdrop-blur bg-ink/80 border-b border-line">
+  <nav class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+    <a href="#home" class="font-mono font-extrabold text-neon glow flex items-center gap-2"><i data-lucide="shield-check" class="w-5 h-5"></i>BIT_CYBER</a>
+    <ul class="hidden md:flex gap-7 font-mono text-sm">
+      <li><a class="hover:text-neon" href="#about">about</a></li>
+      <li><a class="hover:text-neon" href="#soc">live_ops</a></li>
+      <li><a class="hover:text-neon" href="#tracks">tracks</a></li>
+      <li><a class="hover:text-neon" href="#leaderboard">leaderboard</a></li>
+      <li><a class="btn-ghost px-3 py-1 rounded" href="#join">join</a></li>
+    </ul>
+    <button id="menuBtn" class="md:hidden text-neon" aria-label="Toggle menu"><i data-lucide="menu"></i></button>
+  </nav>
+  <div id="mobileMenu" class="hidden md:hidden border-t border-line bg-ink px-4 py-3 font-mono text-sm space-y-3">
+    <a class="block" href="#about">about</a><a class="block" href="#soc">live_ops</a><a class="block" href="#tracks">tracks</a><a class="block" href="#leaderboard">leaderboard</a><a class="block text-neon" href="#join">join</a>
+  </div>
+</header>
+
+<!-- ============ HERO ============ -->
+<section id="home" class="relative min-h-screen flex items-center pt-16 overflow-hidden grid-bg">
+  <canvas id="rain" class="absolute inset-0 w-full h-full opacity-40"></canvas>
+  <div class="absolute inset-0 bg-gradient-to-b from-ink/30 via-transparent to-ink"></div>
+  <div class="relative max-w-7xl mx-auto px-4 w-full grid lg:grid-cols-2 gap-10 items-center">
+    <div>
+      <p class="font-mono text-volt text-sm mb-4">&gt; ssh guest@bit-cyber.club</p>
+      <h1 class="glitch font-mono font-extrabold text-5xl sm:text-6xl xl:text-7xl text-neon glow leading-tight" data-text="BIT CYBER CLUB">BIT CYBER CLUB</h1>
+      <p class="mt-6 text-lg max-w-xl text-gray-300">Learn to break things legally. Train for CTFs, hunt threats, and build the skills that defend real systems, together with students who love security.</p>
+      <div class="mt-8 flex flex-wrap gap-4">
+        <a href="#join" class="btn px-6 py-3 rounded font-mono">Join the crew</a>
+        <a href="#soc" class="btn-ghost px-6 py-3 rounded font-mono">Try the terminal</a>
+      </div>
+      <dl class="mt-10 grid grid-cols-3 gap-4 max-w-md font-mono">
+        <div><dt class="text-xs text-gray-500">members</dt><dd class="text-2xl text-neon" data-count="240">0</dd></div>
+        <div><dt class="text-xs text-gray-500">ctf wins</dt><dd class="text-2xl text-volt" data-count="18">0</dd></div>
+        <div><dt class="text-xs text-gray-500">workshops</dt><dd class="text-2xl text-plasma" data-count="56">0</dd></div>
+      </dl>
+    </div>
+    <!-- Boot terminal -->
+    <div class="win rounded-lg font-mono text-sm">
+      <div class="win-bar flex items-center gap-2 px-4 py-2 rounded-t-lg"><span class="w-3 h-3 rounded-full bg-red-500"></span><span class="w-3 h-3 rounded-full bg-yellow-400"></span><span class="w-3 h-3 rounded-full bg-neon"></span><span class="ml-3 text-xs text-gray-500">boot.sh</span></div>
+      <pre id="boot" class="p-5 min-h-[260px] whitespace-pre-wrap text-neon cursor"></pre>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ABOUT ============ -->
+<section id="about" class="py-24 px-4">
+  <div class="max-w-7xl mx-auto reveal">
+    <h2 class="font-mono text-3xl sm:text-4xl font-extrabold text-neon glow">$ cat about.txt</h2>
+    <div class="mt-8 grid lg:grid-cols-2 gap-10">
+      <p class="text-lg leading-relaxed max-w-prose">BIT Cyber Club is a student-run community that turns curiosity about security into skill. Every week we run hands-on labs, practice for Capture The Flag competitions, and study how real attackers operate so we can stop them. No experience required. We start from the basics and build from there.</p>
+      <div class="grid sm:grid-cols-3 gap-4">
+        <div class="card rounded-lg p-5"><i data-lucide="skull" class="text-neon mb-3"></i><h3 class="font-mono font-bold text-white">Ethical hacking</h3><p class="text-sm mt-2 text-gray-400">Test systems with permission, report what you find, fix what is broken.</p></div>
+        <div class="card rounded-lg p-5"><i data-lucide="flag" class="text-volt mb-3"></i><h3 class="font-mono font-bold text-white">CTF training</h3><p class="text-sm mt-2 text-gray-400">Weekly practice challenges and team entries to national contests.</p></div>
+        <div class="card rounded-lg p-5"><i data-lucide="radar" class="text-plasma mb-3"></i><h3 class="font-mono font-bold text-white">Threat intelligence</h3><p class="text-sm mt-2 text-gray-400">Track real campaigns, read malware reports, learn to spot patterns.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ LIVE SOC DASHBOARD ============ -->
+<section id="soc" class="py-24 px-4 bg-panel/40 border-y border-line">
+  <div class="max-w-7xl mx-auto reveal">
+    <h2 class="font-mono text-3xl sm:text-4xl font-extrabold text-neon glow">$ ./soc --live</h2>
+    <p class="mt-3 text-gray-400">A simulated security operations center. All data is fake and generated in your browser.</p>
+
+    <div class="mt-8 grid grid-cols-2 lg:grid-cols-4 gap-4 font-mono">
+      <div class="win rounded p-4"><p class="text-xs text-gray-500">attacks blocked</p><p id="stBlocked" class="text-2xl text-neon">0</p></div>
+      <div class="win rounded p-4"><p class="text-xs text-gray-500">active threats</p><p id="stActive" class="text-2xl text-[#ff3b6b]">0</p></div>
+      <div class="win rounded p-4"><p class="text-xs text-gray-500">traffic (Mbps)</p><p id="stTraffic" class="text-2xl text-volt">0</p></div>
+      <div class="win rounded p-4"><p class="text-xs text-gray-500">threat level</p><p id="stLevel" class="text-2xl text-plasma">LOW</p></div>
+    </div>
+
+    <div class="mt-6 grid lg:grid-cols-5 gap-6">
+      <!-- Threat map -->
+      <div class="win rounded-lg lg:col-span-3 overflow-hidden">
+        <div class="win-bar px-4 py-2 font-mono text-xs text-gray-400 flex justify-between"><span>global_threat_map</span><span class="text-neon">● live</span></div>
+        <canvas id="map" class="w-full h-72 sm:h-96 block"></canvas>
+      </div>
+      <!-- Log stream -->
+      <div class="win rounded-lg lg:col-span-2 flex flex-col">
+        <div class="win-bar px-4 py-2 font-mono text-xs text-gray-400">event_stream.log</div>
+        <div id="logs" class="flex-1 h-72 sm:h-96 overflow-hidden p-3 font-mono text-xs space-y-1" aria-live="off"></div>
+      </div>
+    </div>
+
+    <!-- Interactive terminal -->
+    <div class="win rounded-lg mt-6 font-mono text-sm" onclick="document.getElementById('cmd').focus()">
+      <div class="win-bar flex items-center gap-2 px-4 py-2 rounded-t-lg"><span class="w-3 h-3 rounded-full bg-red-500"></span><span class="w-3 h-3 rounded-full bg-yellow-400"></span><span class="w-3 h-3 rounded-full bg-neon"></span><span class="ml-3 text-xs text-gray-500">guest@bit-cyber:~</span></div>
+      <div id="termOut" class="p-4 h-64 overflow-y-auto whitespace-pre-wrap text-gray-300"></div>
+      <div class="flex items-center gap-2 px-4 pb-4"><span class="text-neon">guest@bit:~$</span>
+        <input id="cmd" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Terminal command" class="flex-1 bg-transparent outline-none text-neon" placeholder="type 'help'">
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TRACKS ============ -->
+<section id="tracks" class="py-24 px-4">
+  <div class="max-w-7xl mx-auto reveal">
+    <h2 class="font-mono text-3xl sm:text-4xl font-extrabold text-neon glow">$ ls tracks/</h2>
+    <div id="trackGrid" class="mt-10 grid sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+  </div>
+</section>
+
+<!-- ============ LEADERBOARD ============ -->
+<section id="leaderboard" class="py-24 px-4 bg-panel/40 border-y border-line">
+  <div class="max-w-5xl mx-auto reveal">
+    <h2 class="font-mono text-3xl sm:text-4xl font-extrabold text-neon glow">$ sort --ctf-scores</h2>
+    <div class="mt-6 flex flex-wrap gap-3 items-center font-mono text-sm">
+      <input id="lbSearch" type="search" placeholder="search handle..." aria-label="Search hackers" class="field rounded px-3 py-2 w-full sm:w-64">
+      <div id="lbFilters" class="flex gap-2">
+        <button data-f="all" class="btn-ghost px-3 py-2 rounded bg-neon/10">all</button>
+        <button data-f="web" class="btn-ghost px-3 py-2 rounded">web</button>
+        <button data-f="crypto" class="btn-ghost px-3 py-2 rounded">crypto</button>
+        <button data-f="pwn" class="btn-ghost px-3 py-2 rounded">pwn</button>
+      </div>
+    </div>
+    <div class="win rounded-lg mt-4 overflow-x-auto">
+      <table class="w-full font-mono text-sm min-w-[560px]">
+        <thead class="win-bar text-left text-gray-400">
+          <tr>
+            <th class="p-3">rank</th><th class="p-3">hacker</th><th class="p-3">specialty</th>
+            <th class="p-3 cursor-pointer hover:text-neon select-none" id="thSolved">solved ↕</th>
+            <th class="p-3 cursor-pointer hover:text-neon select-none text-right" id="thPoints">points ↓</th>
+          </tr>
+        </thead>
+        <tbody id="lbBody"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ============ JOIN ============ -->
+<section id="join" class="py-24 px-4">
+  <div class="max-w-2xl mx-auto reveal">
+    <h2 class="font-mono text-3xl sm:text-4xl font-extrabold text-neon glow">$ ./register --new-member</h2>
+    <p class="mt-3 text-gray-400">Tell us who you are. We will email you the next meeting details.</p>
+    <form id="joinForm" class="win rounded-lg p-6 mt-8 space-y-5 font-mono text-sm" novalidate>
+      <div>
+        <label for="fName" class="block mb-2 text-neon">full name</label>
+        <input id="fName" required class="field rounded w-full px-4 py-3" placeholder="Ada Lovelace">
+        <p class="err text-[#ff3b6b] text-xs mt-1 hidden"></p>
+      </div>
+      <div>
+        <label for="fHandle" class="block mb-2 text-neon">hacker handle</label>
+        <input id="fHandle" required minlength="3" class="field rounded w-full px-4 py-3" placeholder="zer0_cool">
+        <p class="err text-[#ff3b6b] text-xs mt-1 hidden"></p>
+      </div>
+      <div>
+        <label for="fEmail" class="block mb-2 text-neon">email</label>
+        <input id="fEmail" type="email" required class="field rounded w-full px-4 py-3" placeholder="you@example.com">
+        <p class="err text-[#ff3b6b] text-xs mt-1 hidden"></p>
+      </div>
+      <div>
+        <label for="fTrack" class="block mb-2 text-neon">main interest</label>
+        <select id="fTrack" class="field rounded w-full px-4 py-3"></select>
+      </div>
+      <div>
+        <label for="fMsg" class="block mb-2 text-neon">why do you want to join? (optional)</label>
+        <textarea id="fMsg" rows="3" class="field rounded w-full px-4 py-3" placeholder="I want to learn how attackers think."></textarea>
+      </div>
+      <button type="submit" class="btn w-full py-3 rounded">Request access</button>
+      <p id="formOk" class="hidden text-neon border border-neon/40 rounded p-3"></p>
+    </form>
+  </div>
+</section>
+
+<footer class="border-t border-line py-8 text-center font-mono text-xs text-gray-500">
+  <p>© <span id="yr"></span> BIT CYBER CLUB · Hack ethically. Only test systems you own or have written permission to test.</p>
+</footer>
+
+<script>
+/* ============================================================
+   BIT CYBER CLUB: vanilla JS modules
+   ============================================================ */
+const $ = (s, r = document) => r.querySelector(s);
+const rand = (a, b) => Math.floor(Math.random() * (b - a + 1)) + a;
+const pick = a => a[rand(0, a.length - 1)];
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------- Data ---------- */
+const TRACKS = [
+  { icon: 'terminal-square', c: 'text-neon',   name: 'Penetration testing', desc: 'Recon, exploitation and reporting on safe lab networks.', tags: ['nmap', 'burp', 'metasploit'] },
+  { icon: 'cpu',             c: 'text-volt',   name: 'Reverse engineering', desc: 'Take binaries apart to learn how they work and what they hide.', tags: ['ghidra', 'gdb', 'assembly'] },
+  { icon: 'key-round',       c: 'text-plasma', name: 'Cryptography',        desc: 'From classic ciphers to RSA attacks and modern protocols.', tags: ['rsa', 'aes', 'hashing'] },
+  { icon: 'globe',           c: 'text-neon',   name: 'Web security',        desc: 'Find and fix injection, XSS, broken auth and more.', tags: ['owasp', 'sqli', 'xss'] },
+  { icon: 'search-code',     c: 'text-volt',   name: 'Digital forensics',   desc: 'Recover evidence from disks, memory and network captures.', tags: ['wireshark', 'volatility'] },
+  { icon: 'radar',           c: 'text-plasma', name: 'Threat intelligence', desc: 'Track threat actors and turn reports into useful defenses.', tags: ['mitre att&ck', 'ioc', 'osint'] }
+];
+const HACKERS = [
+  { h: 'n0_signal',  s: 'web',    solved: 142, pts: 9840 },
+  { h: 'ByteWraith', s: 'pwn',    solved: 131, pts: 9410 },
+  { h: 'c1pherpunk', s: 'crypto', solved: 120, pts: 8975 },
+  { h: 'root_cause', s: 'web',    solved: 117, pts: 8560 },
+  { h: 'stack_smash',s: 'pwn',    solved: 109, pts: 8120 },
+  { h: 'null_ptr',   s: 'pwn',    solved: 98,  pts: 7430 },
+  { h: 'xor_queen',  s: 'crypto', solved: 94,  pts: 7015 },
+  { h: 'packet_ghost',s:'web',    solved: 88,  pts: 6540 },
+  { h: 'hexlord',    s: 'crypto', solved: 81,  pts: 5920 },
+  { h: 'sudo_win',   s: 'web',    solved: 72,  pts: 5180 }
+];
+
+/* ---------- Nav ---------- */
+$('#menuBtn').onclick = () => $('#mobileMenu').classList.toggle('hidden');
+document.querySelectorAll('#mobileMenu a').forEach(a => a.onclick = () => $('#mobileMenu').classList.add('hidden'));
+$('#yr').textContent = new Date().getFullYear();
+
+/* ---------- Matrix rain ---------- */
+(function rain() {
+  const cv = $('#rain'), ctx = cv.getContext('2d');
+  const chars = '01アイウエオカキクケコ{}[]<>/\\$#%&'.split('');
+  let cols, drops, fs = 16;
+  function size() {
+    cv.width = cv.offsetWidth; cv.height = cv.offsetHeight;
+    cols = Math.ceil(cv.width / fs); drops = Array.from({ length: cols }, () => rand(-40, 0));
+  }
+  size(); addEventListener('resize', size);
+  function draw() {
+    ctx.fillStyle = 'rgba(10,10,10,.08)'; ctx.fillRect(0, 0, cv.width, cv.height);
+    ctx.fillStyle = '#00ff9c'; ctx.font = fs + 'px JetBrains Mono, monospace';
+    drops.forEach((y, i) => {
+      ctx.fillText(pick(chars), i * fs, y * fs);
+      if (y * fs > cv.height && Math.random() > .975) drops[i] = 0; else drops[i]++;
+    });
+  }
+  if (reduceMotion) { for (let i = 0; i < 60; i++) draw(); } else setInterval(draw, 55);
+})();
+
+/* ---------- Boot typing terminal ---------- */
+(function boot() {
+  const el = $('#boot');
+  const lines = ['Initializing protocol...', 'Loading ethical_hacking.mod ........ [OK]', 'Mounting ctf_arena ................ [OK]',
+    'Verifying credentials ............. [OK]', '', '>>> ACCESS GRANTED <<<', 'Welcome to BIT CYBER CLUB, operator.', 'Type "help" in the terminal below.'];
+  let l = 0, c = 0, out = '';
+  function tick() {
+    if (l >= lines.length) return;
+    if (c < lines[l].length) { out += lines[l][c++]; el.textContent = out; setTimeout(tick, reduceMotion ? 0 : 22); }
+    else { out += '\n'; l++; c = 0; setTimeout(tick, reduceMotion ? 0 : 280); }
+  }
+  tick();
+})();
+
+/* ---------- Animated counters ---------- */
+function runCounters() {
+  document.querySelectorAll('[data-count]').forEach(el => {
+    const target = +el.dataset.count; let n = 0;
+    const step = Math.max(1, Math.ceil(target / 50));
+    const t = setInterval(() => { n = Math.min(target, n + step); el.textContent = n + '+'; if (n >= target) clearInterval(t); }, 30);
+  });
+}
+runCounters();
+
+/* ---------- Scroll reveal ---------- */
+const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { threshold: .1 });
+document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+/* ---------- Tracks ---------- */
+$('#trackGrid').innerHTML = TRACKS.map(t => `
+  <article class="card rounded-lg p-6">
+    <i data-lucide="${t.icon}" class="${t.c} w-8 h-8"></i>
+    <h3 class="font-mono font-bold text-white text-lg mt-4">${t.name}</h3>
+    <p class="text-gray-400 mt-2 text-sm">${t.desc}</p>
+    <div class="flex flex-wrap gap-2 mt-4">${t.tags.map(x => `<span class="font-mono text-xs px-2 py-1 rounded border border-line text-neon">${x}</span>`).join('')}</div>
+  </article>`).join('');
+$('#fTrack').innerHTML = TRACKS.map(t => `<option>${t.name}</option>`).join('');
+
+/* ---------- Leaderboard ---------- */
+(function leaderboard() {
+  let filter = 'all', sortKey = 'pts', dir = -1, q = '';
+  const medal = ['text-yellow-300', 'text-gray-300', 'text-orange-400'];
+  function render() {
+    const rows = HACKERS.filter(x => (filter === 'all' || x.s === filter) && x.h.toLowerCase().includes(q))
+      .sort((a, b) => (a[sortKey] - b[sortKey]) * dir);
+    const max = Math.max(...HACKERS.map(x => x.pts));
+    $('#lbBody').innerHTML = rows.length ? rows.map((x, i) => `
+      <tr class="border-t border-line hover:bg-neon/5 transition">
+        <td class="p-3 font-bold ${medal[i] || 'text-gray-500'}">#${i + 1}</td>
+        <td class="p-3 text-white">${x.h}</td>
+        <td class="p-3"><span class="px-2 py-0.5 rounded border border-line text-volt text-xs">${x.s}</span></td>
+        <td class="p-3">${x.solved}</td>
+        <td class="p-3 text-right"><div class="text-neon">${x.pts.toLocaleString()}</div>
+          <div class="h-1 bg-line rounded mt-1"><div class="h-1 rounded bg-neon" style="width:${x.pts / max * 100}%"></div></div></td>
+      </tr>`).join('') : '<tr><td colspan="5" class="p-6 text-center text-gray-500">No hackers match. Try another handle or filter.</td></tr>';
+  }
+  $('#lbSearch').oninput = e => { q = e.target.value.toLowerCase(); render(); };
+  $('#lbFilters').onclick = e => {
+    const b = e.target.closest('button'); if (!b) return;
+    filter = b.dataset.f;
+    document.querySelectorAll('#lbFilters button').forEach(x => x.classList.toggle('bg-neon/10', x === b));
+    render();
+  };
+  const sortBy = k => { dir = sortKey === k ? -dir : -1; sortKey = k; render(); };
+  $('#thPoints').onclick = () => sortBy('pts');
+  $('#thSolved').onclick = () => sortBy('solved');
+  render();
+})();
+
+/* ---------- SOC: stats, logs, threat map ---------- */
+(function soc() {
+  const CITIES = [[.2,.35,'New York'],[.47,.28,'London'],[.52,.3,'Berlin'],[.62,.4,'Dubai'],[.72,.38,'Mumbai'],[.82,.35,'Beijing'],[.88,.5,'Singapore'],[.5,.6,'Nairobi'],[.55,.68,'Dar es Salaam'],[.28,.62,'São Paulo'],[.12,.4,'San Francisco'],[.9,.75,'Sydney']];
+  const ATT = ['SQL injection', 'Brute-force SSH', 'Port scan', 'XSS probe', 'Phishing payload', 'DDoS SYN flood', 'Ransomware beacon', 'Credential stuffing'];
+  const SEV = [['CRIT', 'sev-crit'], ['HIGH', 'sev-high'], ['MED', 'sev-med'], ['LOW', 'sev-low']];
+  const ip = () => `${rand(11, 223)}.${rand(0, 255)}.${rand(0, 255)}.${rand(1, 254)}`;
+  let blocked = 18240, active = 7, arcs = [];
+
+  /* Log stream */
+  const logs = $('#logs');
+  function addLog() {
+    const [sev, cls] = pick(SEV), t = new Date().toLocaleTimeString('en-GB');
+    const d = document.createElement('div');
+    d.className = 'truncate';
+    d.innerHTML = `<span class="text-gray-600">${t}</span> <span class="${cls} font-bold">[${sev}]</span> ${pick(ATT)} from ${ip()} → ${pick(CITIES)[2]} <span class="text-neon">${Math.random() > .3 ? 'BLOCKED' : 'MONITORING'}</span>`;
+    logs.appendChild(d);
+    while (logs.children.length > 22) logs.removeChild(logs.firstChild);
+    logs.scrollTop = logs.scrollHeight;
+    blocked += rand(1, 9); arcs.push(newArc());
+  }
+  setInterval(addLog, 900); for (let i = 0; i < 12; i++) addLog();
+
+  /* Stats */
+  setInterval(() => {
+    active = Math.max(1, Math.min(25, active + rand(-2, 2)));
+    $('#stBlocked').textContent = blocked.toLocaleString();
+    $('#stActive').textContent = active;
+    $('#stTraffic').textContent = rand(420, 980);
+    const lvl = active > 16 ? ['CRITICAL', '#ff3b6b'] : active > 9 ? ['ELEVATED', '#ffb020'] : ['LOW', '#b44cff'];
+    $('#stLevel').textContent = lvl[0]; $('#stLevel').style.color = lvl[1];
+  }, 1000);
+
+  /* Threat map (canvas) */
+  const cv = $('#map'), ctx = cv.getContext('2d');
+  function size() { const r = devicePixelRatio || 1; cv.width = cv.clientWidth * r; cv.height = cv.clientHeight * r; ctx.setTransform(r, 0, 0, r, 0, 0); }
+  size(); addEventListener('resize', size);
+  function newArc() {
+    let a = pick(CITIES), b = pick(CITIES); while (b === a) b = pick(CITIES);
+    return { a, b, p: 0, sp: .008 + Math.random() * .01 };
+  }
+  function frame() {
+    const w = cv.clientWidth, h = cv.clientHeight;
+    ctx.clearRect(0, 0, w, h);
+    // dotted world grid
+    ctx.fillStyle = 'rgba(0,255,156,.12)';
+    for (let x = 12; x < w; x += 14) for (let y = 12; y < h; y += 14) ctx.fillRect(x, y, 1.5, 1.5);
+    // city nodes
+    CITIES.forEach(([cx, cy, n]) => {
+      const x = cx * w, y = cy * h, pulse = 3 + Math.sin(Date.now() / 400 + cx * 9) * 1.5;
+      ctx.beginPath(); ctx.arc(x, y, pulse, 0, 7); ctx.fillStyle = 'rgba(24,212,255,.9)'; ctx.shadowColor = '#18d4ff'; ctx.shadowBlur = 12; ctx.fill(); ctx.shadowBlur = 0;
+      if (w > 520) { ctx.fillStyle = 'rgba(201,214,207,.6)'; ctx.font = '10px JetBrains Mono, monospace'; ctx.fillText(n, x + 8, y + 3); }
+    });
+    // attack arcs
+    arcs = arcs.filter(a => a.p < 1.15).slice(-14);
+    arcs.forEach(a => {
+      a.p += a.sp;
+      const x1 = a.a[0] * w, y1 = a.a[1] * h, x2 = a.b[0] * w, y2 = a.b[1] * h;
+      const cx = (x1 + x2) / 2, cy = Math.min(y1, y2) - 50 - Math.abs(x2 - x1) * .12;
+      const t = Math.min(a.p, 1), u = 1 - t;
+      ctx.beginPath(); ctx.moveTo(x1, y1);
+      ctx.strokeStyle = 'rgba(255,59,107,.35)'; ctx.lineWidth = 1;
+      ctx.quadraticCurveTo(cx, cy, x2, y2); ctx.stroke();
+      const px = u * u * x1 + 2 * u * t * cx + t * t * x2, py = u * u * y1 + 2 * u * t * cy + t * t * y2;
+      ctx.beginPath(); ctx.arc(px, py, 3, 0, 7); ctx.fillStyle = '#ff3b6b'; ctx.shadowColor = '#ff3b6b'; ctx.shadowBlur = 10; ctx.fill(); ctx.shadowBlur = 0;
+    });
+    requestAnimationFrame(frame);
+  }
+  frame();
+})();
+
+/* ---------- Interactive terminal ---------- */
+(function terminal() {
+  const out = $('#termOut'), inp = $('#cmd'), hist = []; let hi = 0;
+  const print = (t, cls = '') => { const d = document.createElement('div'); d.className = cls; d.textContent = t; out.appendChild(d); out.scrollTop = out.scrollHeight; };
+  const CMDS = {
+    help: () => 'Commands:\n  help     show this list\n  status   club and system status\n  about    what we do\n  tracks   learning tracks\n  ctf      next CTF event\n  whoami   who are you?\n  join     jump to the sign-up form\n  matrix   toggle a surprise\n  clear    clear the screen',
+    status: () => 'SYSTEM ONLINE\n  members ........ 240+\n  next meeting ... Friday 17:00, Lab 3\n  firewall ....... ACTIVE\n  threat level ... ' + $('#stLevel').textContent,
+    about: () => 'BIT Cyber Club: ethical hacking, CTF training and threat intelligence for students. Beginners welcome.',
+    tracks: () => TRACKS.map(t => ' - ' + t.name).join('\n'),
+    ctf: () => 'Next event: BIT Internal CTF\n  format: jeopardy, teams of 3\n  categories: web, crypto, pwn, forensics\n  prep: weekly practice every Wednesday',
+    whoami: () => 'guest. Run "join" to become a member.',
+    join: () => { setTimeout(() => { location.hash = '#join'; $('#fName').focus(); }, 500); return 'Access request initiated... redirecting to registration.'; },
+    sudo: () => 'Nice try. guest is not in the sudoers file. This incident will be reported.',
+    clear: () => { out.innerHTML = ''; return null; },
+    matrix: () => { const c = $('#rain'); c.style.opacity = c.style.opacity === '1' ? '.4' : '1'; return 'Rain intensity toggled. Scroll to the top to see it.'; }
+  };
+  print('BIT CYBER CLUB terminal v1.0. Type "help" to begin.', 'text-neon');
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const raw = inp.value.trim(), c = raw.toLowerCase().split(' ')[0]; inp.value = '';
+      if (!raw) return;
+      hist.push(raw); hi = hist.length;
+      print('guest@bit:~$ ' + raw, 'text-white');
+      const r = CMDS[c] ? CMDS[c]() : `command not found: ${c}. Type "help" for a list.`;
+      if (r) print(r, CMDS[c] ? 'text-gray-300' : 'text-[#ff3b6b]');
+    } else if (e.key === 'ArrowUp') { if (hi > 0) inp.value = hist[--hi]; e.preventDefault(); }
+    else if (e.key === 'ArrowDown') { inp.value = hi < hist.length - 1 ? hist[++hi] : ''; hi = Math.min(hi + 1, hist.length); }
+  });
+})();
+
+/* ---------- Join form ---------- */
+(function form() {
+  const f = $('#joinForm');
+  const rules = {
+    fName:   v => v.trim().length >= 2 || 'Enter your full name.',
+    fHandle: v => /^[\w.-]{3,20}$/.test(v) || 'Handle must be 3-20 letters, numbers, _ . or -',
+    fEmail:  v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) || 'Enter a valid email address.'
+  };
+  f.addEventListener('submit', e => {
+    e.preventDefault(); let ok = true;
+    Object.entries(rules).forEach(([id, fn]) => {
+      const el = $('#' + id), msg = el.parentElement.querySelector('.err'), r = fn(el.value);
+      msg.classList.toggle('hidden', r === true); msg.textContent = r === true ? '' : r; if (r !== true) ok = false;
+    });
+    if (!ok) return;
+    /* Deploy note: to receive real sign-ups on GitHub Pages, POST this object to a form
+       service (e.g. Formspree or Google Forms) with fetch(). Replace the line below. */
+    const data = { name: $('#fName').value, handle: $('#fHandle').value, email: $('#fEmail').value, track: $('#fTrack').value, msg: $('#fMsg').value };
+    console.log('New member request:', data);
+    const ok2 = $('#formOk');
+    ok2.textContent = `> ACCESS REQUESTED. Welcome aboard, ${data.handle}. Check ${data.email} for next steps.`;
+    ok2.classList.remove('hidden'); f.reset();
+  });
+})();
+
+lucide.createIcons();
+</script>
+</body>
+</html>
